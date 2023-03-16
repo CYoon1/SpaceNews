@@ -28,6 +28,13 @@ let testArticle = SpaceData(id: 0, title: "Test News", url: "https://www.space.c
 @MainActor
 class ArticleList: ObservableObject {
     @Published var articles : [SpaceData] = []
+    @Published var pageNumber = 0 // Starts at 0, display as 1 on view.
+    @Published var articlesPerPage = 10 // Default 10
+    
+    func getURLstring() -> String {
+        
+        return "Text"
+    }
     
     func getOnlineData() async  {
         guard let url = URL(string: spaceNewsURLString) else {
@@ -126,6 +133,28 @@ struct ContentView: View {
                 await vm.getOnlineData()
             }
             .navigationTitle("Space News")
+            .toolbar {
+                ToolbarItemGroup(placement: .bottomBar) {
+                    HStack {
+                        Button {
+                            vm.pageNumber -= 1
+                            // Load Page
+                        } label: {
+                            Label("Previous", systemImage: "chevron.backward")
+                        }
+                        .disabled(vm.pageNumber <= 0) // Disable to prevent negative pages
+                        Spacer()
+                        Text("Page \(vm.pageNumber + 1)")
+                        Spacer()
+                        Button {
+                            vm.pageNumber += 1
+                            // Load Page
+                        } label : {
+                            Label("Next", systemImage: "chevron.forward")
+                        }
+                    }
+                }
+            }
         }
     }
 }
