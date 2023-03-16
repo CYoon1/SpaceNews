@@ -31,14 +31,25 @@ class ArticleList: ObservableObject {
     @Published var pageNumber = 0 // Starts at 0, display as 1 on view.
     @Published var articlesPerPage = 10 // Default 10
     
+    
     func getURLstring() -> String {
+        let urlBase = "https://api.spaceflightnewsapi.net/v3/articles?"
         
-        return "Text"
+        func getArticlesPerPageString(count: Int) -> String {
+            "_limit=\(count)"
+        }
+        func getPageOffsetString(page: Int) -> String {
+            "_start=\(articlesPerPage * pageNumber)"
+        }
+        let urlString = urlBase + getArticlesPerPageString(count: articlesPerPage) + "&" + getPageOffsetString(page: pageNumber)
+        print("getURLString gets: \(urlString)")
+        return urlString
     }
     
     func getOnlineData() async  {
-        guard let url = URL(string: spaceNewsURLString) else {
+        guard let url = URL(string: getURLstring()) else {
             print("error making URL from \(spaceNewsURLString)")
+            print("getURLstring() returns : \(getURLstring())")
             return
         }
         do {
@@ -114,7 +125,7 @@ struct DetailView: View {
 
 
 struct ContentView: View {
-    @StateObject var vm = ArticleList()
+    @ObservedObject var vm = ArticleList()
     var body: some View {
         NavigationStack {
             List {
@@ -139,6 +150,9 @@ struct ContentView: View {
                         Button {
                             vm.pageNumber -= 1
                             // Load Page
+                            Task {
+                                await vm.getOnlineData()
+                            }
                         } label: {
                             Label("Previous", systemImage: "chevron.backward")
                         }
@@ -149,6 +163,9 @@ struct ContentView: View {
                         Button {
                             vm.pageNumber += 1
                             // Load Page
+                            Task {
+                                await vm.getOnlineData()
+                            }
                         } label : {
                             Label("Next", systemImage: "chevron.forward")
                         }
