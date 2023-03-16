@@ -24,32 +24,6 @@ struct SpaceData : Codable, Identifiable {
 }
 let testArticle = SpaceData(id: 0, title: "Test News", url: "https://www.space.com/venus-active-volcano-nasa-magellan-mission", imageUrl: "https://cdn.mos.cms.futurecdn.net/YWpKWSwaC3d3ZwaxaFHBqV-1920-80.jpeg.webp", newsSite: "Space.com", summary: "Maat Mons is displayed in this computer generated three-dimensional perspective of the surface of Venus. The viewpoint is located 393 miles (634 kilometers) north of Maat Mons at an elevation of 2 miles (3 km) above the terrain. Lava flows extend for hundreds of kilometers across the fractured plains shown in the foreground, to the base of Maat Mons.  (Image credit: NASA/JPL-Caltech)", publishedAt: "Science & Astronomy") // Test Article
 
-struct ListRowView: View {
-    let data: SpaceData
-    var body: some View {
-        VStack {
-            Text("\(data.title)")
-                .font(.title3)
-            AsyncImage(url: URL(string: data.imageUrl)) { image in
-                image
-                    .resizable()
-                    .scaledToFit()
-
-            } placeholder: {
-                ProgressView()
-            }
-            Link(destination: URL(string: data.url)!) {
-                Image(systemName: "link.circle.fill")
-                    .foregroundColor(.accentColor)
-            }
-        }.buttonStyle(.plain)
-    }
-}
-struct DetailView: View {
-    var body: some View {
-        Text("HI")
-    }
-}
 
 @MainActor
 class ArticleList: ObservableObject {
@@ -78,6 +52,60 @@ class ArticleList: ObservableObject {
     }
 }
 
+struct ListRowView: View {
+    let data: SpaceData
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text("\(data.title)")
+                .font(.title3)
+            Text("Story from: \(data.newsSite)")
+                .font(.subheadline)
+            Text("\(data.publishedAt)")
+                .font(.footnote)
+            AsyncImage(url: URL(string: data.imageUrl)) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 200, height: 200)
+                    .clipShape(RoundedRectangle(cornerRadius: 15))
+            } placeholder: {
+                ProgressView()
+            }
+        }.buttonStyle(.plain)
+    }
+}
+struct DetailView: View {
+    let data: SpaceData
+    var body: some View {
+        ScrollView {
+            Text(data.title)
+                .font(.title)
+            Text(data.publishedAt)
+            AsyncImage(url: URL(string: data.imageUrl)) { image in
+                image
+                    .resizable()
+                    .scaledToFit()
+                
+            } placeholder: {
+                ProgressView()
+            }
+            Text(data.summary)
+        }
+        .toolbar {
+            ToolbarItem(placement: .bottomBar) {
+                HStack {
+                    Text("Visit \(data.newsSite) for more")
+                    Link(destination: URL(string: data.url)!) {
+                        Image(systemName: "link.circle.fill")
+                            .foregroundColor(.accentColor)
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 struct ContentView: View {
     @StateObject var vm = ArticleList()
     var body: some View {
@@ -85,12 +113,10 @@ struct ContentView: View {
             List {
                 ForEach(vm.articles) { article in
                     NavigationLink {
-                        DetailView()
+                        DetailView(data: article)
                     } label: {
                         ListRowView(data: article)
                     }
-
-                    
                 }
             }
             .task {
@@ -99,6 +125,7 @@ struct ContentView: View {
             .refreshable {
                 await vm.getOnlineData()
             }
+            .navigationTitle("Space News")
         }
     }
 }
