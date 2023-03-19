@@ -11,6 +11,7 @@
  */
 
 import SwiftUI
+import SDWebImageSwiftUI
 
 let spaceNewsURLString = "https://api.spaceflightnewsapi.net/v3/articles"
 struct SpaceData : Codable, Identifiable {
@@ -80,15 +81,24 @@ struct ListRowView: View {
                 .font(.subheadline)
             Text("\(data.publishedAt)")
                 .font(.footnote)
-            AsyncImage(url: URL(string: data.imageUrl)) { image in
-                image
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 200, height: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 15))
-            } placeholder: {
-                ProgressView()
-            }
+//            AsyncImage(url: URL(string: data.imageUrl)) { image in
+//                image
+//                    .resizable()
+//                    .scaledToFill()
+//                    .frame(width: 200, height: 200)
+//                    .clipShape(RoundedRectangle(cornerRadius: 15))
+//            } placeholder: {
+//                ProgressView()
+//            }
+//            
+            WebImage(url: URL(string: data.imageUrl))
+                .resizable()
+                .placeholder {
+                    ProgressView()
+                }
+                .scaledToFill()
+                .frame(width: 200, height: 200)
+                .clipShape(RoundedRectangle(cornerRadius: 15))
         }.buttonStyle(.plain)
     }
 }
@@ -99,14 +109,20 @@ struct DetailView: View {
             Text(data.title)
                 .font(.title)
             Text(data.publishedAt)
-            AsyncImage(url: URL(string: data.imageUrl)) { image in
-                image
-                    .resizable()
-                    .scaledToFit()
-                
-            } placeholder: {
-                ProgressView()
-            }
+            WebImage(url: URL(string: data.imageUrl))
+                .resizable()
+                .placeholder {
+                    ProgressView()
+                }
+                .scaledToFit()
+//            AsyncImage(url: URL(string: data.imageUrl)) { image in
+//                image
+//                    .resizable()
+//                    .scaledToFit()
+//                
+//            } placeholder: {
+//                ProgressView()
+//            }
             Text(data.summary)
         }
         .toolbar {
@@ -144,34 +160,6 @@ struct ContentView: View {
                 await vm.getOnlineData()
             }
             .navigationTitle("Space News")
-            .toolbar {
-                ToolbarItemGroup(placement: .bottomBar) {
-                    HStack {
-                        Button {
-                            vm.pageNumber -= 1
-                            // Load Page
-                            Task {
-                                await vm.getOnlineData()
-                            }
-                        } label: {
-                            Label("Previous", systemImage: "chevron.backward")
-                        }
-                        .disabled(vm.pageNumber <= 0) // Disable to prevent negative pages
-                        Spacer()
-                        Text("Page \(vm.pageNumber + 1)")
-                        Spacer()
-                        Button {
-                            vm.pageNumber += 1
-                            // Load Page
-                            Task {
-                                await vm.getOnlineData()
-                            }
-                        } label : {
-                            Label("Next", systemImage: "chevron.forward")
-                        }
-                    }
-                }
-            }
         }
     }
 }
