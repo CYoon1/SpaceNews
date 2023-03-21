@@ -21,9 +21,23 @@ struct SpaceData : Codable, Identifiable {
     var imageUrl: String
     var newsSite: String
     var summary: String
-    var publishedAt: String
+    var publicationDate: String
+    var isFavorited: Bool = false
+    
+    enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case title = "title"
+        case url = "url"
+        case imageUrl = "imageUrl"
+        case newsSite = "newsSite"
+        case summary =  "summary"
+        case publicationDate = "publishedAt"
+    }
+    mutating func toggleFavorite() {
+        isFavorited.toggle()
+    }
 }
-let testArticle = SpaceData(id: 0, title: "Test News", url: "https://www.space.com/venus-active-volcano-nasa-magellan-mission", imageUrl: "https://cdn.mos.cms.futurecdn.net/YWpKWSwaC3d3ZwaxaFHBqV-1920-80.jpeg.webp", newsSite: "Space.com", summary: "Maat Mons is displayed in this computer generated three-dimensional perspective of the surface of Venus. The viewpoint is located 393 miles (634 kilometers) north of Maat Mons at an elevation of 2 miles (3 km) above the terrain. Lava flows extend for hundreds of kilometers across the fractured plains shown in the foreground, to the base of Maat Mons.  (Image credit: NASA/JPL-Caltech)", publishedAt: "Science & Astronomy") // Test Article
+let testArticle = SpaceData(id: 0, title: "Test News", url: "https://www.space.com/venus-active-volcano-nasa-magellan-mission", imageUrl: "https://cdn.mos.cms.futurecdn.net/YWpKWSwaC3d3ZwaxaFHBqV-1920-80.jpeg.webp", newsSite: "Space.com", summary: "Maat Mons is displayed in this computer generated three-dimensional perspective of the surface of Venus. The viewpoint is located 393 miles (634 kilometers) north of Maat Mons at an elevation of 2 miles (3 km) above the terrain. Lava flows extend for hundreds of kilometers across the fractured plains shown in the foreground, to the base of Maat Mons.  (Image credit: NASA/JPL-Caltech)", publicationDate: "Monday") // Test Article
 
 
 @MainActor
@@ -48,6 +62,7 @@ class ArticleList: ObservableObject {
     }
     
     func getOnlineData() async  {
+        print("getOnlineData()")
         guard let url = URL(string: getURLstring()) else {
             print("error making URL from \(spaceNewsURLString)")
             print("getURLstring() returns : \(getURLstring())")
@@ -55,15 +70,19 @@ class ArticleList: ObservableObject {
         }
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
-            
-            if let decodedResponse = try? JSONDecoder().decode([SpaceData].self, from: data) {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            if let decodedResponse = try? decoder.decode([SpaceData].self, from: data) {
                 articles = decodedResponse
             }
         } catch {
             print(error)
         }
     }
-    
+    func updateData(data: SpaceData) {
+        guard let index = articles.firstIndex(where: {$0.id == data.id}) else { return }
+        articles[index] = data
+    }
     
     // Test Function
     func getData() {
@@ -75,22 +94,16 @@ struct ListRowView: View {
     let data: SpaceData
     var body: some View {
         VStack(alignment: .leading) {
-            Text("\(data.title)")
-                .font(.title3)
+            HStack {
+                //                Label(data.isFavorited ? "Favorite" : "Not Favorite", systemImage: data.isFavorited ? "star.fill" : "star")
+                Text("\(data.title)")
+                    .font(.title3)
+                
+            }
             Text("Story from: \(data.newsSite)")
                 .font(.subheadline)
-            Text("\(data.publishedAt)")
+            Text("\(data.publicationDate)")
                 .font(.footnote)
-//            AsyncImage(url: URL(string: data.imageUrl)) { image in
-//                image
-//                    .resizable()
-//                    .scaledToFill()
-//                    .frame(width: 200, height: 200)
-//                    .clipShape(RoundedRectangle(cornerRadius: 15))
-//            } placeholder: {
-//                ProgressView()
-//            }
-//            
             WebImage(url: URL(string: data.imageUrl))
                 .resizable()
                 .placeholder {
@@ -103,38 +116,63 @@ struct ListRowView: View {
     }
 }
 struct DetailView: View {
-    let data: SpaceData
+    @State var data: SpaceData
+    @ObservedObject var vm: ArticleList
     var body: some View {
-        ScrollView {
-            Text(data.title)
-                .font(.title)
-            Text(data.publishedAt)
-            WebImage(url: URL(string: data.imageUrl))
-                .resizable()
-                .placeholder {
-                    ProgressView()
-                }
-                .scaledToFit()
-//            AsyncImage(url: URL(string: data.imageUrl)) { image in
-//                image
-//                    .resizable()
-//                    .scaledToFit()
-//                
-//            } placeholder: {
-//                ProgressView()
-//            }
-            Text(data.summary)
-        }
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
+        VStack {
                 HStack {
-                    Text("Visit \(data.newsSite) for more")
                     Link(destination: URL(string: data.url)!) {
                         Image(systemName: "link.circle.fill")
                             .foregroundColor(.accentColor)
                     }
+                    Spacer()
+                    
+                    Button {
+                        data.toggleFavorite()
+                    } label: {
+//                        Label(data.isFavorited ? "Favorite" : "Not Favorite", systemImage: data.isFavorited ? "star.fill" : "star")
+                        Image(systemName: data.isFavorited ? "star.fill" : "star")
+                    }
                 }
+            ScrollView {
+                Text(data.title)
+                    .font(.title)
+                Text(data.publicationDate)
+                WebImage(url: URL(string: data.imageUrl))
+                    .resizable()
+                    .placeholder {
+                        ProgressView()
+                    }
+                    .scaledToFit()
+                Text(data.summary)
             }
+        }
+        
+        //        .toolbar {
+        //            ToolbarItem(placement: .bottomBar) {
+        //                VStack {
+        //                    HStack {
+        //                        Text("Visit \(data.newsSite) for more")
+        //                        Link(destination: URL(string: data.url)!) {
+        //                            Image(systemName: "link.circle.fill")
+        //                                .foregroundColor(.accentColor)
+        //                        }
+        //                    }
+        //                    HStack {
+        //                        Spacer()
+        //                        Button {
+        //                            data.toggleFavorite()
+        //                        } label: {
+        //                            Label(data.isFavorited ? "Favorite" : "Not Favorite", systemImage: data.isFavorited ? "star.fill" : "star")
+        //                        }
+        //
+        //                    }
+        //                }
+        //            }
+        //        }
+        .onDisappear {
+            print("updateData()")
+            vm.updateData(data: data)
         }
     }
 }
@@ -147,7 +185,7 @@ struct ContentView: View {
             List {
                 ForEach(vm.articles) { article in
                     NavigationLink {
-                        DetailView(data: article)
+                        DetailView(data: article, vm: vm)
                     } label: {
                         ListRowView(data: article)
                     }
