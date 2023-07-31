@@ -14,7 +14,7 @@ import SwiftUI
 import SDWebImageSwiftUI
 
 let spaceNewsURLString = "https://api.spaceflightnewsapi.net/v3/articles"
-struct SpaceData : Codable, Identifiable {
+struct SpaceData : Codable, Identifiable, Equatable {
     var id: Int
     var title: String
     var url: String
@@ -73,7 +73,8 @@ class ArticleList: ObservableObject {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             if let decodedResponse = try? decoder.decode([SpaceData].self, from: data) {
-                articles = decodedResponse
+                pageNumber = pageNumber + 1 // Code for Infinite Scrolling
+                articles = articles + decodedResponse // Code for Infinite Scrolling
             }
         } catch {
             print(error)
@@ -147,29 +148,6 @@ struct DetailView: View {
                 Text(data.summary)
             }
         }
-        
-        //        .toolbar {
-        //            ToolbarItem(placement: .bottomBar) {
-        //                VStack {
-        //                    HStack {
-        //                        Text("Visit \(data.newsSite) for more")
-        //                        Link(destination: URL(string: data.url)!) {
-        //                            Image(systemName: "link.circle.fill")
-        //                                .foregroundColor(.accentColor)
-        //                        }
-        //                    }
-        //                    HStack {
-        //                        Spacer()
-        //                        Button {
-        //                            data.toggleFavorite()
-        //                        } label: {
-        //                            Label(data.isFavorited ? "Favorite" : "Not Favorite", systemImage: data.isFavorited ? "star.fill" : "star")
-        //                        }
-        //
-        //                    }
-        //                }
-        //            }
-        //        }
         .onDisappear {
             print("updateData()")
             vm.updateData(data: data)
@@ -184,10 +162,20 @@ struct ContentView: View {
         NavigationStack {
             List {
                 ForEach(vm.articles) { article in
-                    NavigationLink {
-                        DetailView(data: article, vm: vm)
-                    } label: {
-                        ListRowView(data: article)
+                    LazyVStack {
+                        NavigationLink {
+                            DetailView(data: article, vm: vm)
+                        } label: {
+                            ListRowView(data: article)
+                        }
+                        .onAppear { // Infinitely scrolling
+                            if vm.articles.last == article {
+                                print("Last")
+                                Task {
+                                    await vm.getOnlineData()
+                                }
+                            }
+                        }
                     }
                 }
             }
