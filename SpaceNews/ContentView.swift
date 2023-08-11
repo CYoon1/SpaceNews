@@ -94,26 +94,30 @@ class ArticleList: ObservableObject {
 struct ListRowView: View {
     let data: SpaceData
     var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                //                Label(data.isFavorited ? "Favorite" : "Not Favorite", systemImage: data.isFavorited ? "star.fill" : "star")
-                Text("\(data.title)")
-                    .font(.title3)
-                
+        HStack {
+        WebImage(url: URL(string: data.imageUrl))
+            .resizable()
+            .placeholder {
+                ProgressView()
             }
-            Text("Story from: \(data.newsSite)")
-                .font(.subheadline)
-            Text("\(data.publicationDate)")
-                .font(.footnote)
-            WebImage(url: URL(string: data.imageUrl))
-                .resizable()
-                .placeholder {
-                    ProgressView()
+            .scaledToFill()
+            .frame(width: 75, height: 75)
+            .clipShape(RoundedRectangle(cornerRadius: 15))
+            
+            VStack(alignment: .leading) {
+                HStack {
+                    //                Label(data.isFavorited ? "Favorite" : "Not Favorite", systemImage: data.isFavorited ? "star.fill" : "star")
+                    
+                    Text("\(data.title)")
+                        .font(.title3)
+                    
                 }
-                .scaledToFill()
-                .frame(width: 200, height: 200)
-                .clipShape(RoundedRectangle(cornerRadius: 15))
-        }.buttonStyle(.plain)
+                Text("Story from: \(data.newsSite)")
+                    .font(.subheadline)
+                Text("\(data.publicationDate)")
+                    .font(.footnote)
+            }.buttonStyle(.plain)
+        }
     }
 }
 struct DetailView: View {
@@ -138,6 +142,7 @@ struct DetailView: View {
             ScrollView {
                 Text(data.title)
                     .font(.title)
+                    .padding(.horizontal)
                 Text(data.publicationDate)
                 WebImage(url: URL(string: data.imageUrl))
                     .resizable()
@@ -147,6 +152,7 @@ struct DetailView: View {
                     .scaledToFit()
                 Text(data.summary)
             }
+
         }
         .onDisappear {
             print("updateData()")

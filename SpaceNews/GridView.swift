@@ -26,12 +26,8 @@ struct GridView: View {
                         GridCellView(article: article)
                             .frame(height: 150)
                     }
-
-                    
-                    
                 }
             }
-            
             .task {
                 await vm.getOnlineData()
             }
@@ -41,7 +37,6 @@ struct GridView: View {
         }
         .padding(.horizontal, 4)
     }
-    
 }
 
 struct GridCellView: View {
